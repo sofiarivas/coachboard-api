@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
 from app.models import Subscription, Board
-from app.schemas.subscription import SubscriptionResponse
 from app.schemas.board import BoardResponse
+from app.schemas.subscription import SubscriptionResponse
 from app.utils.security import decode_token, oauth2_scheme
 from uuid import UUID
 
