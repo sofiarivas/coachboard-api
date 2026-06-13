@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,16 +7,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.routes import auth, coaches, boards, subscriptions, workouts
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     """Handle application startup and shutdown lifecycle."""
-    # Startup: create all database tables if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            logger.info("Attempting to create database tables...")
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database tables created successfully.")
+    except Exception as e:
+        logger.error(f"Error during database initialization in lifespan: {e}")
+        raise
     yield
     # Shutdown: cleanup happens automatically
-
 
 app = FastAPI(title="Coachboard API", version="1.0.0", lifespan=lifespan)
 
@@ -37,3 +44,14 @@ app.include_router(workouts.router)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.on_event("startup")
+async def startup():
+    try:
+        async with engine.begin() as conn:
+            logger.info("Attempting to create database tables in startup...")
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database tables created successfully in startup.")
+    except Exception as e:
+        logger.error(f"Error during database initialization in startup: {e}")
+        raise
